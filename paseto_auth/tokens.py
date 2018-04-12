@@ -2,6 +2,7 @@ import paseto
 
 from django import settings
 
+from .exceptions import TokenError
 from .settings import AUTH_SETTINGS
 
 
@@ -18,7 +19,7 @@ class BaseToken(object):
         required_claims: list of token required claims.
         token_type: token type (access/refresh).
         lifetime: token lifetime in seconds.
-        
+
     Methods:
         is_valid: returns boolean indicating if the token is valid.
     """
@@ -27,11 +28,11 @@ class BaseToken(object):
     def __init__(self, data=None, token=None):
         """
         Creates a token object from a data dictionary or a token string.
-        
+
         Args:
             data: optional dictionary containing the token claims.
             token: optional token string.
-        
+
         Raises:
             TokenError: when missing both data and token args.
         """
@@ -43,7 +44,7 @@ class BaseToken(object):
             self.token = token
         else:
             raise TokenError("Missing argument 'data' or 'token'")
-            
+
     def _create_token(self):
         """
         Creates a token using paseto and assigns it to the token attribute.
@@ -55,14 +56,14 @@ class BaseToken(object):
             exp_seconds=self.lifetime,
         )
         self.token = token.decode()
-        
+
     def _parse_token(self):
         """
         Parses the token string.
-        
+
         Returns:
             A dict containing the token message, exp date and footer
-        
+
         Raises:
             PasetoException: invalid token data.
             ValueError: invalid token string.
@@ -77,7 +78,7 @@ class BaseToken(object):
     def is_valid(self):
         """
         Indicates if the token is valid
-        
+
         Returns:
             A boolean.
         """
@@ -108,16 +109,19 @@ class RefreshToken(BaseToken):
     Class for refresh tokens.
     """
     token_type = REFRESH
+    lifetime_choices = {
+        'short': AUTH_SETTINGS['REFRESH_SHORT_LIFETIME'],
+        'long': AUTH_SETTINGS['REFRESH_LONG_LIFETIME'],
+        'permanent': AUTH_SETTINGS['REFRESH_PERMANENT_LIFETIME'],
+    }
 
-    def __init__(self, data=None, token=None, remember=False):
+    def __init__(self, data=None, token=None):
         """
         Creates a token from the BaseToken class.
-        
+
         Args:
             remember: boolean to set token lifetime to long/short (True/False).
         """
-        if remember:
-            self.lifetime = AUTH_SETTINGS['REFRESH_LONG_LIFETIME']
-        else:
-            self.lifetime = AUTH_SETTINGS['REFRESH_SHORT_LIFETIME']
+        if data:
+            self.lifetime = self.lifetime_choices[data['lifetime']]
         super().__init__(data, token)
