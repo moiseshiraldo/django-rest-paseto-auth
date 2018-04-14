@@ -23,7 +23,7 @@ class BaseToken(object):
     Methods:
         is_valid: returns boolean indicating if the token is valid.
     """
-    required_claims = ['type', 'model', 'pk']
+    required_claims = ['type', 'model', 'key']
 
     def __init__(self, data=None, token=None):
         """

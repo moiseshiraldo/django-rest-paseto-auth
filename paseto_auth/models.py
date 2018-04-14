@@ -7,6 +7,7 @@ class AbstractRefreshToken(models.Model):
     """
     Abstract base model to store the state of refresh tokens.
     """
+    key = models.CharField(max_length=40, primary_key=True)
     user_agent = models.TextField(blank=True)
     ip = models.GenericIPAddressField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
