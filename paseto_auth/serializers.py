@@ -43,6 +43,9 @@ class GetTokenPairSerializer(serializers.Serializer):
 
         Returns:
             A dict containing a token pair.
+
+        Raises:
+            AuthenticationFailed if invalid user credentials.
         """
         self.user = authenticate(**data)
         if self.user is None or not self.user.is_active:
@@ -133,6 +136,9 @@ class RefreshTokenSerializer(serializers.Serializer):
 
         Returns:
             A dict containing the new access token.
+
+        Raises:
+            AuthenticationFailed if the refresh token is invalid.
         """
         token = RefreshToken(token=data['refresh_token'])
         if token.is_valid():
