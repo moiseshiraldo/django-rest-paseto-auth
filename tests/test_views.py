@@ -1,0 +1,91 @@
+from django.contrib.auth.models import User
+from django.urls import reverse
+
+from rest_framework.test import APITestCase
+
+import paseto
+from paseto_auth.models import UserRefreshToken
+from paseto_auth.settings import AUTH_SETTINGS
+
+
+class TokenViewTestCase(APITestCase):
+    """
+    Tests for token views
+    """
+    user_credentials = {
+        'username': 'testuser',
+        'password': 'qwerty'
+    }
+    
+    def setUp(self):
+        self.user = User.objects.create_user(**self.user_credentials)
+
+    def test_invalid_user_credentials(self):
+        """
+        Test get token pair view with invalid user credentials.
+        """
+        response = self.client.post(
+            reverse('paseto_auth:get_token_pair'),
+            data={'username': 'testuser', 'password': '1234'}
+        )
+        self.assertTrue(response.status_code, 401)
+        self.assertTrue(
+            response.json()['detail'],
+            'Incorrect authentication credentials.'
+        )
+
+    def test_get_token_pair(self):
+        """
+        Test get token pair view with valid user credentials.
+        """
+        response = self.client.post(
+            reverse('paseto_auth:get_token_pair'),
+            data=self.user_credentials,
+        )
+        self.assertTrue(response.status_code, 200)
+        self.assertTrue(response.json().get('refresh_token'))
+        self.assertTrue(response.json().get('access_token'))
+        refresh_token = response.json()['refresh_token']
+        parsed = paseto.parse(
+            key=bytes.fromhex(AUTH_SETTINGS['SECRET_KEY']),
+            purpose='local',
+            token=bytes(str(refresh_token), 'utf-8'),
+        )
+        token_key = parsed['message']['key']
+        self.assertTrue(
+            UserRefreshToken.objects.filter(key=token_key).exists()
+        )
+
+    def test_invalid_refresh_token(self):
+        """
+        Test get access token view with invalid refresh token.
+        """
+        response = self.client.post(
+            reverse('paseto_auth:get_access_token'),
+            data={'refresh_token': 'qwerty'},
+        )
+        self.assertTrue(response.status_code, 401)
+        self.assertTrue(response.json()['detail'], 'Invalid refresh token.')
+
+    def test_get_access_token(self):
+        """
+        Test get access token view.
+        """
+        response = self.client.post(
+            reverse('paseto_auth:get_token_pair'),
+            data=self.user_credentials,
+        )
+        refresh_token = response.json()['refresh_token']
+        response = self.client.post(
+            reverse('paseto_auth:get_access_token'),
+            data={'refresh_token': refresh_token},
+        )
+        self.assertTrue(response.status_code, 200)
+        self.assertTrue(response.json().get('access_token'))
+        access_token = response.json()['access_token']
+        parsed = paseto.parse(
+            key=bytes.fromhex(AUTH_SETTINGS['SECRET_KEY']),
+            purpose='local',
+            token=bytes(str(refresh_token), 'utf-8'),
+        )
+        self.assertTrue(parsed['message']['type'], 'access')

@@ -1,6 +1,6 @@
 from django.conf import settings
 
-user_settings = settings.PASETO_AUTH
+user_settings = getattr(settings, 'PASETO_AUTH', {})
 
 AUTH_SETTINGS = {
     'SECRET_KEY': settings.PASETO_KEY,

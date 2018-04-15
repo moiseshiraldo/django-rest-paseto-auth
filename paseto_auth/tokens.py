@@ -1,6 +1,6 @@
 import paseto
 
-from django import settings
+from django.conf import settings
 
 from .exceptions import TokenError
 from .settings import AUTH_SETTINGS
@@ -9,6 +9,13 @@ from .settings import AUTH_SETTINGS
 # Token types
 ACCESS = 'access'
 REFRESH = 'refresh'
+
+# Lifetime values
+LIFETIME_CHOICES = {
+    'short': AUTH_SETTINGS['REFRESH_SHORT_LIFETIME'],
+    'long': AUTH_SETTINGS['REFRESH_LONG_LIFETIME'],
+    'permanent': AUTH_SETTINGS['REFRESH_PERMANENT_LIFETIME'],
+}
 
 
 class BaseToken(object):
@@ -37,7 +44,7 @@ class BaseToken(object):
             TokenError: when missing both data and token args.
         """
         if data:
-            self.data = data
+            self.data = data.copy()
             self.data['type'] = self.token_type
             self._create_token()
         elif token:
@@ -109,11 +116,6 @@ class RefreshToken(BaseToken):
     Class for refresh tokens.
     """
     token_type = REFRESH
-    lifetime_choices = {
-        'short': AUTH_SETTINGS['REFRESH_SHORT_LIFETIME'],
-        'long': AUTH_SETTINGS['REFRESH_LONG_LIFETIME'],
-        'permanent': AUTH_SETTINGS['REFRESH_PERMANENT_LIFETIME'],
-    }
 
     def __init__(self, data=None, token=None):
         """
@@ -123,5 +125,5 @@ class RefreshToken(BaseToken):
             remember: boolean to set token lifetime to long/short (True/False).
         """
         if data:
-            self.lifetime = self.lifetime_choices[data['lifetime']]
+            self.lifetime = LIFETIME_CHOICES[data['lifetime']]
         super().__init__(data, token)

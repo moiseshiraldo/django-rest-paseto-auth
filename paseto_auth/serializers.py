@@ -1,4 +1,5 @@
 import string
+from datetime import datetime, timedelta
 
 from django.contrib.auth import authenticate, get_user_model
 from django.core.exceptions import ObjectDoesNotExist
@@ -8,7 +9,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 
 from .models import UserRefreshToken, AppRefreshToken
-from .tokens import AccessToken, RefreshToken
+from .tokens import AccessToken, RefreshToken, LIFETIME_CHOICES
 
 
 VALID_KEY_CHARS = string.ascii_lowercase + string.digits
@@ -63,18 +64,17 @@ class GetTokenPairSerializer(serializers.Serializer):
         Returns:
             A dict containing the access/refresh token pair.
         """
-        claims = {
+        self.claims = {
             'model': 'user',
             'pk': self.user.pk,
-            'key': self.get_token_key()
         }
-        access_token = AccessToken(data=claims)
         if data.get('remember'):
-            claims['lifetime'] = 'long'
+            self.claims['lifetime'] = 'long'
         else:
-            claims['lifetime'] = 'short'
-        refresh_token = RefreshToken(data=claims)
-
+            self.claims['lifetime'] = 'short'
+        self.claims['key'] = self.get_token_key()
+        access_token = AccessToken(data=self.claims)
+        refresh_token = RefreshToken(data=self.claims)
         return {
             'access_token': str(access_token),
             'refresh_token': str(refresh_token),
@@ -90,11 +90,17 @@ class GetTokenPairSerializer(serializers.Serializer):
         while True:
             token_key = get_random_string(32, VALID_KEY_CHARS)
             if not UserRefreshToken.objects.filter(key=token_key).exists():
+                lifetime = LIFETIME_CHOICES[self.claims['lifetime']]
+                expires_at = datetime.now() + timedelta(seconds=lifetime)
+                user_agent = self.context['request'].META.get(
+                    'HTTP_USER_AGENT', ''
+                )
                 UserRefreshToken.objects.create(
                     key=token_key,
                     user=self.user,
-                    user_agent=self.context['request'].META['HTTP_USER_AGENT'],
+                    user_agent=user_agent,
                     ip=self.get_user_ip(),
+                    expires_at=expires_at,
                 )
                 return token_key
 
@@ -125,7 +131,7 @@ class RefreshTokenSerializer(serializers.Serializer):
         token_model: a dict mapping token types to their models.
     """
     refresh_token = serializers.CharField()
-    token_model = {
+    refresh_model = {
         'user': UserRefreshToken,
         'app': AppRefreshToken,
     }
@@ -140,19 +146,17 @@ class RefreshTokenSerializer(serializers.Serializer):
         Raises:
             AuthenticationFailed if the refresh token is invalid.
         """
-        token = RefreshToken(token=data['refresh_token'])
-        if token.is_valid():
-            token_model = self.token_model[token.data['model']]
+        refresh_token = RefreshToken(token=data['refresh_token'])
+        if refresh_token.is_valid():
+            refresh_model = self.refresh_model[refresh_token.data['model']]
             try:
-                obj = token_model.objects.get(pk=token.data.get('pk'))
+                refresh_model.objects.get(
+                    key=refresh_token.data['key'], locked=False,
+                )
             except ObjectDoesNotExist:
-                raise AuthenticationFailed()
+                raise AuthenticationFailed(detail="Invalid refresh token.")
         else:
-            raise AuthenticationFailed()
+            raise AuthenticationFailed(detail="Invalid refresh token.")
 
-        data = {
-            'model': token.data['model'],
-            'pk': obj.id
-        }
-        access_token = AccessToken(data=data)
+        access_token = AccessToken(data=refresh_token.data)
         return {'access_token': str(access_token)}

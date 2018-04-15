@@ -1,0 +1,6 @@
+[run]
+source = paseto_auth
+branch = True
+
+[report]
+omit = *tests*,*migrations*

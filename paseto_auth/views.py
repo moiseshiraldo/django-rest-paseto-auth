@@ -48,7 +48,7 @@ class GetAccessTokenView(GenericAPIView):
         token.
 
         Raises:
-            AuthenticationFailed (401 response) if invialid refresh token.
+            AuthenticationFailed (401 response) if invalid refresh token.
         """
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
