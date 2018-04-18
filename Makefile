@@ -1,7 +1,7 @@
 .PHONY: flake8 test coverage
 
 flake8:
-	flake8 paseto_auth --exclude=migrations
+	flake8 paseto_auth tests --exclude=migrations
 
 test:
 	python ./tests/manage.py test $${TEST_ARGS:-tests}

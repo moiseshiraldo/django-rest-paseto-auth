@@ -55,3 +55,9 @@ DATABASES = {
 STATIC_URL = '/static/'
 
 PASETO_KEY = "1425ee478d16de683c2c35e1963e8d5c852f6af151f61fc8a05442bae9cd8444"
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'paseto_auth.authentication.PasetoAuthentication',
+    )
+}

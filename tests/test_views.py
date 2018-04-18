@@ -16,7 +16,7 @@ class TokenViewTestCase(APITestCase):
         'username': 'testuser',
         'password': 'qwerty'
     }
-    
+
     def setUp(self):
         self.user = User.objects.create_user(**self.user_credentials)
 
@@ -28,8 +28,8 @@ class TokenViewTestCase(APITestCase):
             reverse('paseto_auth:get_token_pair'),
             data={'username': 'testuser', 'password': '1234'}
         )
-        self.assertTrue(response.status_code, 401)
-        self.assertTrue(
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(
             response.json()['detail'],
             'Incorrect authentication credentials.'
         )
@@ -42,7 +42,7 @@ class TokenViewTestCase(APITestCase):
             reverse('paseto_auth:get_token_pair'),
             data=self.user_credentials,
         )
-        self.assertTrue(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json().get('refresh_token'))
         self.assertTrue(response.json().get('access_token'))
         refresh_token = response.json()['refresh_token']
@@ -64,8 +64,8 @@ class TokenViewTestCase(APITestCase):
             reverse('paseto_auth:get_access_token'),
             data={'refresh_token': 'qwerty'},
         )
-        self.assertTrue(response.status_code, 401)
-        self.assertTrue(response.json()['detail'], 'Invalid refresh token.')
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()['detail'], 'Invalid refresh token.')
 
     def test_get_access_token(self):
         """
@@ -80,12 +80,12 @@ class TokenViewTestCase(APITestCase):
             reverse('paseto_auth:get_access_token'),
             data={'refresh_token': refresh_token},
         )
-        self.assertTrue(response.status_code, 200)
+        self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json().get('access_token'))
         access_token = response.json()['access_token']
         parsed = paseto.parse(
             key=bytes.fromhex(AUTH_SETTINGS['SECRET_KEY']),
             purpose='local',
-            token=bytes(str(refresh_token), 'utf-8'),
+            token=bytes(str(access_token), 'utf-8'),
         )
-        self.assertTrue(parsed['message']['type'], 'access')
+        self.assertEqual(parsed['message']['type'], 'access')

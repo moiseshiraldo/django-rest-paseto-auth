@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from .serializers import GetTokenPairSerializer, RefreshTokenSerializer
+from .settings import AUTH_SETTINGS
 
 
 class GetTokenPairView(GenericAPIView):
@@ -14,7 +15,7 @@ class GetTokenPairView(GenericAPIView):
     authentication_classes = ()
 
     def get_authenticate_header(self, request):
-        return 'Bearer realm="api"'
+        return '{} realm="api"'.format(AUTH_SETTINGS['HEADER_PREFIX'])
 
     def post(self, request, *args, **kwargs):
         """
@@ -40,7 +41,7 @@ class GetAccessTokenView(GenericAPIView):
     authentication_classes = ()
 
     def get_authenticate_header(self, request):
-        return 'Bearer realm="api"'
+        return '{} realm="api"'.format(AUTH_SETTINGS['HEADER_PREFIX'])
 
     def post(self, request, *args, **kwargs):
         """

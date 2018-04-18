@@ -26,7 +26,7 @@ class SerializerTestCase(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(**self.user_credentials)
-        
+
     def fake_request(self, headers={}):
         factory = RequestFactory()
         request = factory.post('/api/auth/tokens/', **headers)
