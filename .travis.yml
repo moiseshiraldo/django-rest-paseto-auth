@@ -1,0 +1,15 @@
+language: python
+sudo: false
+cache: pip
+matrix:
+  include:
+    - python: 3.6
+      env: TOXENV=py36-dj20-drf38
+
+install:
+  - wget https://download.libsodium.org/libsodium/releases/LATEST.tar.gz && tar xzf LATEST.tar.gz && pushd libsodium-stable/ && ./configure --prefix=/usr && make && make check && sudo make install && popd
+  - pip install tox codecov
+script:
+  - tox -v
+after_success:
+  - codecov
