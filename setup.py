@@ -13,9 +13,10 @@ def read(*paths):
 
 setup(
   name='django-rest-paseto-auth',
-  version='0.1.0',
+  version='0.1.0-dev',
   description='Paseto authentication for Django Rest Framework',
   long_description=open('README.md').read(),
+  long_description_content_type='text/markdown',
   url='https://github.com/moiseshiraldo/django-rest-paseto-auth',
   author='Moises Hiraldo',
   author_email='moiseshiraldo@gmail.com',
