@@ -1,6 +1,6 @@
 from io import open
 
-from setuptools import setup
+from setuptools import find_packages, setup
 
 
 def read(*paths):
@@ -13,7 +13,7 @@ def read(*paths):
 
 setup(
   name='django-rest-paseto-auth',
-  version='0.1.0-dev',
+  version='0.1.0-dev1',
   description='Paseto authentication for Django Rest Framework',
   long_description=open('README.md').read(),
   long_description_content_type='text/markdown',
@@ -21,7 +21,8 @@ setup(
   author='Moises Hiraldo',
   author_email='moiseshiraldo@gmail.com',
   license='MIT',
-  packages=['paseto_auth'],
+  packages=find_packages(exclude=['tests*']),
+  include_package_data=True,
   python_requires=">=3.6",
   install_requires=[
         'Django>=2',
@@ -33,7 +34,6 @@ setup(
     'Intended Audience :: Developers',
     'Environment :: Web Environment',
     'Operating System :: OS Independent',
-    'Programming Language :: Python :: 3.5',
     'Programming Language :: Python :: 3.6',
     'Framework :: Django :: 2.0',
     'License :: OSI Approved :: MIT License',
