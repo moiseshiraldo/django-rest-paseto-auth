@@ -26,12 +26,12 @@ class PasetoAuthentication(authentication.BaseAuthentication):
         """
         if not request.META.get('HTTP_AUTHORIZATION'):
             return None
-        try:
-            token = request.META['HTTP_AUTHORIZATION'].split(" ")[1]
-        except IndexError:
-            raise AuthenticationFailed("Invalid access token")
 
-        access_token = AccessToken(token=token)
+        header = request.META['HTTP_AUTHORIZATION'].split()
+        if header[0] != AUTH_SETTINGS['HEADER_PREFIX'] or len(header) != 2:
+            return None
+
+        access_token = AccessToken(token=header[1])
         if not access_token.is_valid():
             raise AuthenticationFailed("Invalid access token")
 

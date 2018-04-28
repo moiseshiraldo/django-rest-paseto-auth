@@ -36,11 +36,10 @@ class AuthenticationTestCase(TestCase):
 
     def test_invalid_authentication_header(self):
         """
-        Test authentication scheme with invalid header.
+        Test not auth attempt if invalid header.
         """
         request = self.fake_request({'HTTP_AUTHORIZATION': 'zxcvb'})
-        with self.assertRaises(AuthenticationFailed):
-            PasetoAuthentication().authenticate(request)
+        self.assertEqual(PasetoAuthentication().authenticate(request), None)
 
     def test_invalid_access_token(self):
         """
