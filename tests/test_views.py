@@ -1,9 +1,12 @@
+import paseto
+import pendulum
+
 from django.contrib.auth.models import User
 from django.urls import reverse
 
 from rest_framework.test import APITestCase
 
-import paseto
+from paseto_auth import tokens
 from paseto_auth.models import UserRefreshToken
 from paseto_auth.settings import AUTH_SETTINGS
 
@@ -63,6 +66,30 @@ class TokenViewTestCase(APITestCase):
         response = self.client.post(
             reverse('paseto_auth:get_access_token'),
             data={'refresh_token': 'qwerty'},
+        )
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(response.json()['detail'], 'Invalid refresh token.')
+
+    def test_expired_refresh_token(self):
+        """
+        Test get access token view with expired refresh token.
+        """
+        data = {
+            'model': 'user',
+            'pk': self.user.pk,
+            'key': "qwerty",
+            'type': tokens.REFRESH,
+            'exp': pendulum.now().subtract(seconds=10).to_atom_string()
+        }
+        refresh_token = paseto.create(
+            key=bytes.fromhex(AUTH_SETTINGS['SECRET_KEY']),
+            purpose='local',
+            claims=data,
+        )
+        UserRefreshToken.objects.create(user=self.user, key=data['key'])
+        response = self.client.post(
+            reverse('paseto_auth:get_access_token'),
+            data={'refresh_token': refresh_token.decode()},
         )
         self.assertEqual(response.status_code, 401)
         self.assertEqual(response.json()['detail'], 'Invalid refresh token.')

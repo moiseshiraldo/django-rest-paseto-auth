@@ -1,7 +1,5 @@
 import paseto
 
-from django.conf import settings
-
 from .exceptions import TokenError
 from .settings import AUTH_SETTINGS
 
@@ -57,7 +55,7 @@ class BaseToken(object):
         Creates a token using paseto and assigns it to the token attribute.
         """
         token = paseto.create(
-            key=bytes.fromhex(settings.PASETO_KEY),
+            key=bytes.fromhex(AUTH_SETTINGS['SECRET_KEY']),
             purpose='local',
             claims=self.data,
             exp_seconds=self.lifetime,

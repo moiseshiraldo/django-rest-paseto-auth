@@ -1,5 +1,6 @@
 import unittest
 import paseto
+import pendulum
 
 from paseto_auth import tokens, exceptions
 from paseto_auth.settings import AUTH_SETTINGS
@@ -62,7 +63,7 @@ class TokenTestCase(unittest.TestCase):
         token = tokens.BaseToken(token="qwerty")
         self.assertFalse(token.is_valid())
 
-    def test_missing_claims(self):
+    def test_parse_missing_claims(self):
         """
         Test invalid token missing claims.
         """
@@ -71,6 +72,21 @@ class TokenTestCase(unittest.TestCase):
         token = tokens.AccessToken(data=data)
         token = tokens.AccessToken(token=str(token))
         self.assertFalse(token.is_valid())
+
+    def test_parse_expired_token(self):
+        """
+        Test expired token.
+        """
+        data = self.data.copy()
+        data['type'] = tokens.ACCESS
+        data['exp'] = pendulum.now().subtract(seconds=10).to_atom_string()
+        token = paseto.create(
+            key=bytes.fromhex(AUTH_SETTINGS['SECRET_KEY']),
+            purpose='local',
+            claims=data,
+        )
+        access_token = tokens.AccessToken(token=token.decode())
+        self.assertFalse(access_token.is_valid())
 
     def test_parse_token(self):
         """

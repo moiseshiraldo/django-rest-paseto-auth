@@ -58,7 +58,7 @@ class PasetoAuthentication(authentication.BaseAuthentication):
             return None
 
         access_token = AccessToken(token=header[1])
-        
+
         if not access_token.is_valid():
             raise AuthenticationFailed("Invalid access token")
 

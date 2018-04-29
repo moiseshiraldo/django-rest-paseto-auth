@@ -1,10 +1,13 @@
+import paseto
+import pendulum
+
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.test.client import RequestFactory
 
-import paseto
 from rest_framework.exceptions import AuthenticationFailed
 
+from paseto_auth import tokens
 from paseto_auth.authentication import PasetoAuthentication
 from paseto_auth.settings import AUTH_SETTINGS
 
@@ -17,7 +20,7 @@ class AuthenticationTestCase(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="testuser")
         token_claims = {
-            'type': 'access',
+            'type': tokens.ACCESS,
             'model': 'user',
             'pk': self.user.pk,
             'key': 'qwerty'
@@ -46,6 +49,27 @@ class AuthenticationTestCase(TestCase):
         Test authentication scheme with invalid access token.
         """
         request = self.fake_request({'HTTP_AUTHORIZATION': 'Paseto zxcvb'})
+        with self.assertRaises(AuthenticationFailed):
+            PasetoAuthentication().authenticate(request)
+
+    def test_expired_access_token(self):
+        """
+        Test authentication scheme with expired access token.
+        """
+        token_claims = {
+            'type': tokens.ACCESS,
+            'model': 'user',
+            'pk': self.user.pk,
+            'key': 'qwerty',
+            'exp': pendulum.now().subtract(seconds=10).to_atom_string()
+        }
+        access_token = paseto.create(
+            key=bytes.fromhex(AUTH_SETTINGS['SECRET_KEY']),
+            purpose='local',
+            claims=token_claims
+        )
+        auth_header = 'Paseto {}'.format(access_token.decode())
+        request = self.fake_request({'HTTP_AUTHORIZATION': auth_header})
         with self.assertRaises(AuthenticationFailed):
             PasetoAuthentication().authenticate(request)
 
