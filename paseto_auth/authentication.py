@@ -25,7 +25,7 @@ def get_user(access_token):
             )
         elif access_token.data['model'] == 'app':
             app_token = AppRefreshToken.objects.get(
-                pk=access_token.data['pk'],
+                key=access_token.data['pk'],
                 locked=False
             )
             user = AppIntegrationUser(app_token)

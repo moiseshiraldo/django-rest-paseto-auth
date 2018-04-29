@@ -1,7 +1,7 @@
 import paseto
 import pendulum
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group, Permission
 from django.test import TestCase
 from django.test.client import RequestFactory
 
@@ -73,12 +73,53 @@ class AuthenticationTestCase(TestCase):
         with self.assertRaises(AuthenticationFailed):
             PasetoAuthentication().authenticate(request)
 
-    def test_successful_authentication(self):
+    def test_no_user_authentication(self):
         """
-        Test authentication scheme with valid access token.
+        Test authentication scheme with non-existent user.
+        """
+        self.user.delete()
+        auth_header = 'Paseto {}'.format(self.access_token.decode())
+        request = self.fake_request({'HTTP_AUTHORIZATION': auth_header})
+        user, token = PasetoAuthentication().authenticate(request)
+        self.assertFalse(user.is_authenticated)
+        self.assertTrue(user.is_anonymous)
+
+    def test_user_authentication(self):
+        """
+        Test authentication scheme with valid user access token.
         """
         auth_header = 'Paseto {}'.format(self.access_token.decode())
         request = self.fake_request({'HTTP_AUTHORIZATION': auth_header})
         user, token = PasetoAuthentication().authenticate(request)
         self.assertEqual(user.pk, self.user.pk)
         self.assertEqual(token.data['type'], 'access')
+
+    def test_app_authentication(self):
+        """
+        Test authentication schem with valid app access token.
+        """
+        group = Group.objects.create(name="Test group")
+        perm = Permission.objects.get(codename="add_userrefreshtoken")
+        group.permissions.add(perm)
+        obj, refresh_token = tokens.create_app_token(
+            owner=self.user, groups=[group]
+        )
+        access_token = tokens.AccessToken(
+            data={'model': 'app', 'pk': obj.pk, 'key': obj.key}
+        )
+        auth_header = 'Paseto {}'.format(str(access_token))
+        request = self.fake_request({'HTTP_AUTHORIZATION': auth_header})
+        user, token = PasetoAuthentication().authenticate(request)
+        self.assertTrue(user.is_authenticated)
+        self.assertEqual(str(user), 'AppIntegrationUser')
+        self.assertEqual(user.app_token.key, obj.key)
+        self.assertTrue(user.has_perm('paseto_auth.add_userrefreshtoken'))
+        self.assertTrue(user.has_module_perms('paseto_auth'))
+        self.assertTrue(group in user.groups.all())
+        self.assertFalse(perm in user.user_permissions.all())
+        self.assertTrue(
+            'paseto_auth.add_userrefreshtoken' in user.get_group_permissions()
+        )
+        self.assertTrue(
+            'paseto_auth.add_userrefreshtoken' in user.get_all_permissions()
+        )

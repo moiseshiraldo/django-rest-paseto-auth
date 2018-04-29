@@ -1,18 +1,18 @@
-import string
 from datetime import datetime, timedelta
 
 from django.contrib.auth import authenticate, get_user_model
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils.crypto import get_random_string
 
 from rest_framework import serializers
 from rest_framework.exceptions import AuthenticationFailed
 
 from .models import UserRefreshToken, AppRefreshToken
-from .tokens import AccessToken, RefreshToken, LIFETIME_CHOICES
-
-
-VALID_KEY_CHARS = string.ascii_lowercase + string.digits
+from .tokens import (
+    AccessToken,
+    RefreshToken,
+    LIFETIME_CHOICES,
+    generate_token_key,
+)
 
 
 class GetTokenPairSerializer(serializers.Serializer):
@@ -87,22 +87,20 @@ class GetTokenPairSerializer(serializers.Serializer):
         Returns:
             A string containing the key.
         """
-        while True:
-            token_key = get_random_string(32, VALID_KEY_CHARS)
-            if not UserRefreshToken.objects.filter(key=token_key).exists():
-                lifetime = LIFETIME_CHOICES[self.claims['lifetime']]
-                expires_at = datetime.now() + timedelta(seconds=lifetime)
-                user_agent = self.context['request'].META.get(
-                    'HTTP_USER_AGENT', ''
-                )
-                UserRefreshToken.objects.create(
-                    key=token_key,
-                    user=self.user,
-                    user_agent=user_agent,
-                    ip=self.get_user_ip(),
-                    expires_at=expires_at,
-                )
-                return token_key
+        token_key = generate_token_key(refresh_token_type='user')
+        lifetime = LIFETIME_CHOICES[self.claims['lifetime']]
+        expires_at = datetime.now() + timedelta(seconds=lifetime)
+        user_agent = self.context['request'].META.get(
+            'HTTP_USER_AGENT', ''
+        )
+        UserRefreshToken.objects.create(
+            key=token_key,
+            user=self.user,
+            user_agent=user_agent,
+            ip=self.get_user_ip(),
+            expires_at=expires_at,
+        )
+        return token_key
 
     def get_user_ip(self):
         """

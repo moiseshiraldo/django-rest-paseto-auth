@@ -1,8 +1,15 @@
 import paseto
+import string
+from datetime import datetime, timedelta
+
+from django.utils.crypto import get_random_string
 
 from .exceptions import TokenError
+from .models import UserRefreshToken, AppRefreshToken
 from .settings import AUTH_SETTINGS
 
+
+VALID_KEY_CHARS = string.ascii_lowercase + string.digits
 
 # Token types
 ACCESS = 'access'
@@ -125,3 +132,58 @@ class RefreshToken(BaseToken):
         if data:
             self.lifetime = LIFETIME_CHOICES[data['lifetime']]
         super().__init__(data, token)
+
+
+def generate_token_key(refresh_token_type):
+    """
+    Creates a unique token key.
+
+    Args:
+        refresh_token_type: 'user' or 'app'.
+
+    Returns:
+        A string containing the key.
+    """
+    token_model = {
+        'user': UserRefreshToken,
+        'app': AppRefreshToken,
+    }[refresh_token_type]
+    while True:
+        token_key = get_random_string(32, VALID_KEY_CHARS)
+        if not token_model.objects.filter(key=token_key).exists():
+            return token_key
+
+
+def create_app_token(owner=None, groups=[], perms=[]):
+    """
+    Creates and stores an app refresh token.
+
+    Args:
+        owner: owner of the app token (generic ForeignKey).
+        is_superuser: boolean to indicate superuser permissions.
+        groups: list of groups to assign.
+        perms: list of permissions to assign.
+
+    Returns:
+        The crated app token object.
+    """
+    token_key = generate_token_key(refresh_token_type='app')
+    lifetime = LIFETIME_CHOICES['permanent']
+    expires_at = datetime.now() + timedelta(seconds=lifetime)
+    obj = AppRefreshToken.objects.create(
+        owner=owner, key=token_key, expires_at=expires_at
+    )
+    if groups:
+        obj.groups.add(*list(groups))
+    if perms:
+        obj.permissions.add(*list(perms))
+
+    data = {
+        'model': 'app',
+        'key': token_key,
+        'pk': token_key,
+        'lifetime': 'permanent',
+    }
+    refresh_token = RefreshToken(data=data)
+
+    return obj, str(refresh_token)
