@@ -159,13 +159,14 @@ def create_app_token(name="", owner=None, groups=[], perms=[]):
     Creates and stores an app refresh token.
 
     Args:
+        name: an optional name for the app token.
         owner: owner of the app token (generic ForeignKey).
         is_superuser: boolean to indicate superuser permissions.
         groups: list of groups to assign.
         perms: list of permissions to assign.
 
     Returns:
-        The crated app token object.
+        The crated app token object and the refresh token string.
     """
     token_key = generate_token_key(refresh_token_type='app')
     lifetime = LIFETIME_CHOICES['permanent']

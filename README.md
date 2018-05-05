@@ -11,7 +11,7 @@ Before using this, see https://github.com/paragonie/paseto for more information 
 
 ## Motivations and objectives
 
-I needed a token authentication system for a new project and none of the [available third party authentication pacakges](http://www.django-rest-framework.org/api-guide/authentication/#third-party-packages) covered my requirements completely. After some work developing my own system, I thought it would be interresting to share it and accept suggestions and contributions.
+I needed a token authentication system for a new project and none of the [available third party authentication pacakges](http://www.django-rest-framework.org/api-guide/authentication/#third-party-packages) covered my requirements completely. After some work developing my own system, I thought it would be interesting to share it and accept suggestions and contributions.
 
 My goal is to build a token authentication system that meets the following requirements:
 
@@ -124,3 +124,33 @@ $ curl \
 {
   'access_token': 'v2.local.wSpANWW6wNkQoVhqCWRkUp-wPfoc6fFsml7kmNlmuccDdLpqpVKmOZy6C1cYttzIt0OM-DL2uOWQKcahje0u1uSceG5mzXBZVMjDZnbXZMamF5X5JDTCZrAruVSGZ5EtliHJTFkHkgvp8c3Xmut9_8fWI09Qn6U0gaWPgM8hM_eRi7FXNHvE7ZeGOrE37SImnVZm-jCGBgMYjWzOowzQ6ZH6JvaC07eWyh6zsGQGM-l65sBlbJtTHA',
 }
+
+```
+
+## App tokens
+
+You can create user-independent refresh tokens for app integrations, with a pesudo-permanent lifetime (`PAESETO_AUTH['REFRESH_PERMANENT_LIFETIME']` setting) and custom Django groups/permissions. For example, to implement something like GitHub personal API tokens, you could do:
+
+```python
+from paseto_auth.tokens import create_app_token
+
+obj, refresh_token = create_app_token(
+   name="Custom application",
+   owner=user,
+   groups=groups,
+   perms=permissions,
+)
+```
+
+Where owner is a generic foreign key to any object. A reversed relation could look like:
+
+```python
+from django.db import models
+from django.contrib.contenttypes.fields import GenericRelation
+
+class MyUserModel(models.Model):
+    ...
+    api_tokens = GenericRelation('paseto_auth.AppRefreshToken')
+``` 
+
+The `create_app_token` function returns the token object stored in the database and the refresh token string, that can be used to obtain access tokens an authenticate like a normal user. The authentication class will return an instance of `AppIntegrationUser` that implements all the methods from the Django `PermissionsMixin`.
