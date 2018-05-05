@@ -30,11 +30,15 @@ class UserRefreshToken(AbstractRefreshToken):
         related_name='refresh_tokens'
     )
 
+    def __str__(self):
+        return self.key
+
 
 class AppRefreshToken(AbstractRefreshToken):
     """
     Stores the state of an app integration refresh token.
     """
+    name = models.CharField(max_length=100, blank=True)
     owner_ct = models.ForeignKey(
         ContentType, on_delete=models.CASCADE, blank=True, null=True
     )
@@ -52,6 +56,9 @@ class AppRefreshToken(AbstractRefreshToken):
         related_name="app_token_set",
         related_query_name="app_token",
     )
+
+    def __str__(self):
+        return self.name or self.key
 
     def get_group_permissions(self, obj=None):
         perms = Permission.objects.filter(group__app_token=self).values_list(

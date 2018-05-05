@@ -154,7 +154,7 @@ def generate_token_key(refresh_token_type):
             return token_key
 
 
-def create_app_token(owner=None, groups=[], perms=[]):
+def create_app_token(name="", owner=None, groups=[], perms=[]):
     """
     Creates and stores an app refresh token.
 
@@ -171,7 +171,7 @@ def create_app_token(owner=None, groups=[], perms=[]):
     lifetime = LIFETIME_CHOICES['permanent']
     expires_at = datetime.now() + timedelta(seconds=lifetime)
     obj = AppRefreshToken.objects.create(
-        owner=owner, key=token_key, expires_at=expires_at
+        name=name, owner=owner, key=token_key, expires_at=expires_at
     )
     if groups:
         obj.groups.add(*list(groups))

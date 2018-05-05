@@ -29,6 +29,7 @@ class Migration(migrations.Migration):
                 ('groups', models.ManyToManyField(blank=True, related_name='app_token_set', related_query_name='app_token', to='auth.Group')),
                 ('owner_ct', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, to='contenttypes.ContentType')),
                 ('user_permissions', models.ManyToManyField(blank=True, related_name='app_token_set', related_query_name='app_token', to='auth.Permission')),
+                ('name', models.CharField(max_length=100, blank=True)),
             ],
             options={
                 'abstract': False,
