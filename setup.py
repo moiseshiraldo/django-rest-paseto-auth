@@ -3,17 +3,9 @@ from io import open
 from setuptools import find_packages, setup
 
 
-def read(*paths):
-    """
-    Build a file path from paths and return the contents.
-    """
-    with open(os.path.join(*paths), 'r') as f:
-        return f.read()
-
-
 setup(
   name='django-rest-paseto-auth',
-  version='0.1.0-dev1',
+  version='0.1.0',
   description='Paseto authentication for Django Rest Framework',
   long_description=open('README.md').read(),
   long_description_content_type='text/markdown',
@@ -38,6 +30,5 @@ setup(
     'Framework :: Django :: 2.0',
     'License :: OSI Approved :: MIT License',
     'Topic :: Internet :: WWW/HTTP',
-    
   ],
 )
