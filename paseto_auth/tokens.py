@@ -35,7 +35,7 @@ class BaseToken(object):
     Methods:
         is_valid: returns boolean indicating if the token is valid.
     """
-    required_claims = ['type', 'model', 'pk', 'key']
+    required_claims = ['type', 'model', 'pk']
 
     def __init__(self, data=None, token=None):
         """
@@ -51,6 +51,7 @@ class BaseToken(object):
         if data:
             self.data = data.copy()
             self.data['type'] = self.token_type
+            self.data.pop('lifetime', None)
             self._create_token()
         elif token:
             self.token = token
@@ -121,6 +122,7 @@ class RefreshToken(BaseToken):
     Class for refresh tokens.
     """
     token_type = REFRESH
+    required_claims = ['type', 'model', 'key']
 
     def __init__(self, data=None, token=None):
         """
@@ -177,12 +179,11 @@ def create_app_token(name="", owner=None, groups=[], perms=[]):
     if groups:
         obj.groups.add(*list(groups))
     if perms:
-        obj.permissions.add(*list(perms))
+        obj.user_permissions.add(*list(perms))
 
     data = {
         'model': 'app',
         'key': token_key,
-        'pk': token_key,
         'lifetime': 'permanent',
     }
     refresh_token = RefreshToken(data=data)

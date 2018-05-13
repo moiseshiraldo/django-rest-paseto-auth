@@ -68,12 +68,12 @@ class GetTokenPairSerializer(serializers.Serializer):
             'model': 'user',
             'pk': self.user.pk,
         }
+        access_token = AccessToken(data=self.claims)
         if data.get('remember'):
             self.claims['lifetime'] = 'long'
         else:
             self.claims['lifetime'] = 'short'
         self.claims['key'] = self.get_token_key()
-        access_token = AccessToken(data=self.claims)
         refresh_token = RefreshToken(data=self.claims)
         return {
             'access_token': str(access_token),
@@ -129,7 +129,7 @@ class RefreshTokenSerializer(serializers.Serializer):
         token_model: a dict mapping token types to their models.
     """
     refresh_token = serializers.CharField()
-    refresh_model = {
+    refresh_models = {
         'user': UserRefreshToken,
         'app': AppRefreshToken,
     }
@@ -146,7 +146,7 @@ class RefreshTokenSerializer(serializers.Serializer):
         """
         refresh_token = RefreshToken(token=data['refresh_token'])
         if refresh_token.is_valid():
-            refresh_model = self.refresh_model[refresh_token.data['model']]
+            refresh_model = self.refresh_models[refresh_token.data['model']]
             try:
                 refresh_model.objects.get(
                     key=refresh_token.data['key'], locked=False,
@@ -156,5 +156,9 @@ class RefreshTokenSerializer(serializers.Serializer):
         else:
             raise AuthenticationFailed(detail="Invalid refresh token.")
 
-        access_token = AccessToken(data=refresh_token.data)
+        data = {
+            'model': refresh_token.data['model'],
+            'pk': refresh_token.data.get('pk') or refresh_token.data.get('key')
+        }
+        access_token = AccessToken(data=data)
         return {'access_token': str(access_token)}
