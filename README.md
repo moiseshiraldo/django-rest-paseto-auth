@@ -30,7 +30,7 @@ Install using pip:
 Generate a 32-bytes hexadecimal secret key:
 
 ```python
-import screts
+import secrets
 secrets.token_hex(32)
 '55acd7321e85e62d0fe5ee6ea127ba4bd8ac90f6ea87f1bf2d3d5e816399d7d2'
 ```
